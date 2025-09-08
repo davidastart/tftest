@@ -1,0 +1,131 @@
+title: "Oracle Autonomous Database 23ai FREE Deployment"
+description: "Deploy Oracle Autonomous Database 23ai with automated data loading using SQLcl"
+schemaVersion: 1.1.0
+version: "1.0.0"
+
+# Define the logo and information links
+logoUrl: "https://cloudmarketplace.oracle.com/marketplace/content?contentId=80357668"
+source:
+  type: "marketplace"
+  reference: 12345
+
+locale: "en"
+
+variableGroups:
+  - title: "Required Configuration"
+    visible: true
+    variables:
+      - ociTenancyOcid
+      - ociUserOcid
+      - ociCompartmentOcid
+      - ociUserPassword
+      - ociRegionIdentifier
+      - resId
+
+  - title: "Network Configuration"
+    visible: true
+    variables:
+      - ociVcnOcid
+      - ociPrivateSubnetOcid
+      - ociPublicSubnetOcid
+
+variables:
+  # Required OCI Configuration
+  ociTenancyOcid:
+    type: oci:identity:tenancy:id
+    title: "Tenancy OCID"
+    description: "The OCID of the tenancy"
+    required: true
+
+  ociUserOcid:
+    type: oci:identity:user:id
+    title: "User OCID"
+    description: "The OCID of the user"
+    required: true
+
+  ociCompartmentOcid:
+    type: oci:identity:compartment:id
+    title: "Compartment"
+    description: "Select the compartment where resources will be created"
+    required: true
+
+  ociUserPassword:
+    type: password
+    title: "User Password"
+    description: "Password for OCI user authentication"
+    required: true
+    minLength: 8
+    maxLength: 128
+    pattern: "^.*$"
+
+  ociRegionIdentifier:
+    type: oci:identity:region:name
+    title: "Region"
+    description: "Select the OCI region for deployment"
+    required: true
+
+  resId:
+    type: string
+    title: "Resource Identifier"
+    description: "Unique identifier to append to resource names (e.g., 001, DEV, PROD)"
+    required: true
+    minLength: 1
+    maxLength: 10
+    pattern: "^[a-zA-Z0-9]+$"
+    default: "001"
+
+  # Network Configuration
+  ociVcnOcid:
+    type: oci:core:vcn:id
+    title: "Virtual Cloud Network (VCN)"
+    description: "Select the VCN for network configuration"
+    required: false
+    dependsOn:
+      compartmentId: ${ociCompartmentOcid}
+
+  ociPrivateSubnetOcid:
+    type: oci:core:subnet:id
+    title: "Private Subnet"
+    description: "Select the private subnet"
+    required: false
+    dependsOn:
+      compartmentId: ${ociCompartmentOcid}
+      vcnId: ${ociVcnOcid}
+    visible:
+      and:
+        - not:
+            eq:
+              - ${ociVcnOcid}
+              - ""
+
+  ociPublicSubnetOcid:
+    type: oci:core:subnet:id
+    title: "Public Subnet"
+    description: "Select the public subnet"
+    required: false
+    dependsOn:
+      compartmentId: ${ociCompartmentOcid}
+      vcnId: ${ociVcnOcid}
+    visible:
+      and:
+        - not:
+            eq:
+              - ${ociVcnOcid}
+              - ""
+
+# Output definitions
+outputs:
+  atp_admin_password:
+    type: string
+    title: "ATP Admin Password"
+    description: "The generated admin password for the Autonomous Database"
+    sensitive: true
+
+  atp_name:
+    type: string
+    title: "ATP Database Name"
+    description: "The name of the created Autonomous Database"
+
+# Primary button configuration
+primaryOutputButton:
+  - atp_name
