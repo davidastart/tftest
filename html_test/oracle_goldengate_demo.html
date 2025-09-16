@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oracle GoldenGate 23ai Bidirectional Replication</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #2c3e50;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            margin-right: 380px; /* Make room for side panels */
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .replication-flow {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .replication-flow h3 {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #2c3e50;
+            font-size: 1.5em;
+            border-bottom: 3px solid #e74c3c;
+            padding-bottom: 10px;
+        }
+
+        .flow-diagram {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 40px 0;
+            position: relative;
+            min-height: 500px;
+        }
+
+        .site {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 10;
+            width: 300px;
+        }
+
+        .site-label {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+            text-align: center;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #ecf0f1, #bdc3c7);
+            border-radius: 25px;
+            border: 2px solid #95a5a6;
+        }
+
+        .database {
+            width: 120px;
+            height: 160px;
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        .db-top {
+            width: 120px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            border: 3px solid #a93226;
+            position: relative;
+            z-index: 3;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .db-body {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(to right, #e74c3c 0%, #c0392b 50%, #e74c3c 100%);
+            border-left: 3px solid #a93226;
+            border-right: 3px solid #a93226;
+            position: relative;
+            margin-top: -15px;
+            z-index: 2;
+        }
+
+        .db-bottom {
+            width: 120px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #c0392b, #a93226);
+            border: 3px solid #922b21;
+            position: relative;
+            margin-top: -15px;
+            z-index: 1;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .db-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-weight: bold;
+            font-size: 0.9em;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+            z-index: 5;
+            text-align: center;
+        }
+
+        .process-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .process-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .process-box {
+            width: 90px;
+            height: 50px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.75em;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+            text-align: center;
+        }
+
+        .process-box:hover {
+            transform: scale(1.05);
+        }
+
+        .extract {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            border: 2px solid #1e8449;
+        }
+
+        .distribution {
+            background: linear-gradient(135deg, #3498db, #5dade2);
+            border: 2px solid #2980b9;
+        }
+
+        .replicat {
+            background: linear-gradient(135deg, #9b59b6, #bb6bd9);
+            border: 2px solid #7d3c98;
+        }
+
+        .trail-file {
+            width: 70px;
+            height: 35px;
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            border: 2px solid #d35400;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.65em;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .trail-file:hover {
+            transform: scale(1.05);
+        }
+
+        .data-packet {
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        .data-packet.insert {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            border: 2px solid #1e8449;
+        }
+
+        .data-packet.update {
+            background: linear-gradient(135deg, #3498db, #5dade2);
+            border: 2px solid #2980b9;
+        }
+
+        .data-packet.delete {
+            background: linear-gradient(135deg, #e74c3c, #ec7063);
+            border: 2px solid #c0392b;
+        }
+
+        .connection-line {
+            position: absolute;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, rgba(52, 152, 219, 0.4), transparent);
+            z-index: 5;
+            border-radius: 2px;
+        }
+
+        .connection-line.active {
+            background: linear-gradient(90deg, transparent, rgba(52, 152, 219, 0.8), transparent);
+            box-shadow: 0 0 8px rgba(52, 152, 219, 0.4);
+            animation: pulse-line 2s infinite;
+        }
+
+        .connection-line.west-to-east {
+            background: linear-gradient(90deg, transparent, rgba(39, 174, 96, 0.6), transparent);
+        }
+
+        .connection-line.west-to-east.active {
+            background: linear-gradient(90deg, transparent, rgba(39, 174, 96, 0.8), transparent);
+            box-shadow: 0 0 8px rgba(39, 174, 96, 0.4);
+        }
+
+        .connection-line.east-to-west {
+            background: linear-gradient(90deg, transparent, rgba(155, 89, 182, 0.6), transparent);
+        }
+
+        .connection-line.east-to-west.active {
+            background: linear-gradient(90deg, transparent, rgba(155, 89, 182, 0.8), transparent);
+            box-shadow: 0 0 8px rgba(155, 89, 182, 0.4);
+        }
+
+        .network-zone {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            min-width: 200px;
+        }
+
+        .network-label {
+            color: #7f8c8d;
+            font-size: 1.1em;
+            font-weight: bold;
+            text-align: center;
+            padding: 10px;
+            background: rgba(127, 140, 141, 0.1);
+            border-radius: 15px;
+            border: 2px dashed #bdc3c7;
+        }
+
+        .activity-log-panel {
+            position: fixed;
+            top: 120px;
+            right: 20px;
+            width: 350px;
+            background: rgba(44, 62, 80, 0.95);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            font-size: 0.8em;
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            max-height: 300px;
+        }
+
+        .activity-log-panel h4 {
+            margin-bottom: 15px;
+            color: #3498db;
+            border-bottom: 1px solid #3498db;
+            padding-bottom: 5px;
+            font-size: 1.1em;
+        }
+
+        .metrics-panel {
+            position: fixed;
+            top: 440px;
+            right: 20px;
+            width: 350px;
+            background: rgba(44, 62, 80, 0.95);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            font-size: 0.85em;
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+        }
+
+        .metrics-panel h4 {
+            margin-bottom: 15px;
+            color: #3498db;
+            border-bottom: 1px solid #3498db;
+            padding-bottom: 5px;
+        }
+
+        .metric-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 8px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .metric-value {
+            font-weight: bold;
+            color: #2ecc71;
+        }
+
+        .metric-value.warning {
+            color: #f39c12;
+        }
+
+        .metric-value.error {
+            color: #e74c3c;
+        }
+
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2000;
+        }
+
+        .toast {
+            background: #2c3e50;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            margin: 5px 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            animation: toast-slide-in 0.3s ease-out;
+            backdrop-filter: blur(10px);
+        }
+
+        .toast.success { border-left: 4px solid #27ae60; }
+        .toast.error { border-left: 4px solid #e74c3c; }
+        .toast.info { border-left: 4px solid #3498db; }
+        .toast.warning { border-left: 4px solid #f39c12; }
+
+        .controls-panel {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+            display: flex;
+            gap: 25px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 140px;
+        }
+
+        .control-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .control-button.stop {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        .control-button.start {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+        }
+
+        .control-button.simulate {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+        }
+
+        .log-container {
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            padding: 10px;
+        }
+
+        .log-entry {
+            padding: 6px 10px;
+            margin: 3px 0;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            border-left: 3px solid #3498db;
+            background: rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .log-entry:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .log-entry.west { border-left-color: #27ae60; }
+        .log-entry.east { border-left-color: #9b59b6; }
+        .log-entry.extract { border-left-color: #27ae60; }
+        .log-entry.distribution { border-left-color: #3498db; }
+        .log-entry.replicat { border-left-color: #9b59b6; }
+        .log-entry.error { border-left-color: #e74c3c; }
+        .log-entry.warning { border-left-color: #f39c12; }
+
+        .status-indicator {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        .status-indicator.running {
+            background: #27ae60;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.stopped {
+            background: #e74c3c;
+        }
+
+        .status-indicator.warning {
+            background: #f39c12;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+
+        @keyframes pulse-line {
+            0% { opacity: 0.4; }
+            50% { opacity: 0.8; }
+            100% { opacity: 0.4; }
+        }
+
+        @keyframes toast-slide-in {
+            0% { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+            100% { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+
+        .conflict-indicator {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #e74c3c;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.6em;
+            animation: blink 1s infinite;
+            z-index: 10;
+        }
+
+        .direction-indicator {
+            position: absolute;
+            font-size: 24px;
+            color: #7f8c8d;
+            z-index: 100;
+            animation: float 3s infinite ease-in-out;
+        }
+
+        .process-box.highlight {
+            animation: process-pulse 0.8s ease-out;
+        }
+
+        @keyframes process-pulse {
+            0% { 
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(241, 196, 15, 0.7);
+            }
+            50% { 
+                transform: scale(1.08);
+                box-shadow: 0 0 15px 5px rgba(241, 196, 15, 0.6);
+            }
+            100% { 
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(241, 196, 15, 0);
+            }
+        }
+
+        .database.highlight {
+            animation: database-pulse 1s ease-out;
+        }
+
+        @keyframes database-pulse {
+            0% { 
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7);
+            }
+            50% { 
+                transform: scale(1.05);
+                box-shadow: 0 0 20px 10px rgba(46, 204, 113, 0.4);
+            }
+            100% { 
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(46, 204, 113, 0);
+            }
+        }
+
+        .db-body.highlight {
+            background: linear-gradient(to right, #2ecc71 0%, #27ae60 50%, #2ecc71 100%) !important;
+            transition: background 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Oracle GoldenGate 23ai Bidirectional Replication</h1>
+        
+        <div class="replication-flow">
+            <h3>West ⇄ East Bidirectional Microservices Architecture</h3>
+            
+            <div class="flow-diagram">
+                <!-- West Database -->
+                <div class="site" id="west-site">
+                    <div class="site-label">West Database</div>
+                    <div class="database">
+                        <div class="db-top"></div>
+                        <div class="db-body">
+                            <div class="db-label">Oracle DB<br>West</div>
+                        </div>
+                        <div class="db-bottom"></div>
+                    </div>
+                    
+                    <!-- West Side Components -->
+                    <div class="process-stack">
+                        <!-- West to East Source Components -->
+                        <div class="process-row" style="margin-bottom: 20px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div class="process-box extract" id="west-extract">
+                                    Extract
+                                    <div class="status-indicator running" id="west-extract-status"></div>
+                                </div>
+                                <div style="color: #7f8c8d; font-size: 1.2em;">→</div>
+                                <div class="trail-file" id="west-local-trail">Local<br>Trail</div>
+                                <div style="color: #7f8c8d; font-size: 1.2em;">→</div>
+                                <div class="process-box distribution" id="west-distribution">
+                                    Dist<br>Path
+                                    <div class="status-indicator running" id="west-distribution-status"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- East to West Target Components -->
+                        <div class="process-row">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div class="process-box replicat" id="west-replicat">
+                                    Replicat
+                                    <div class="status-indicator running" id="west-replicat-status"></div>
+                                </div>
+                                <div style="color: #7f8c8d; font-size: 1.2em;">←</div>
+                                <div class="trail-file" id="west-remote-trail">Remote<br>Trail</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Network Zone -->
+                <div class="network-zone">
+                    <div class="network-label">
+                        Network<br>
+                        <small>Encrypted TCP/IP</small>
+                    </div>
+                </div>
+
+                <!-- East Database -->
+                <div class="site" id="east-site">
+                    <div class="site-label">East Database</div>
+                    <div class="database">
+                        <div class="db-top"></div>
+                        <div class="db-body">
+                            <div class="db-label">Oracle DB<br>East</div>
+                        </div>
+                        <div class="db-bottom"></div>
+                    </div>
+                    
+                    <!-- East Side Components -->
+                    <div class="process-stack">
+                        <!-- West to East Target Components -->
+                        <div class="process-row" style="margin-bottom: 20px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div class="trail-file" id="east-remote-trail">Remote<br>Trail</div>
+                                <div style="color: #7f8c8d; font-size: 1.2em;">→</div>
+                                <div class="process-box replicat" id="east-replicat">
+                                    Replicat
+                                    <div class="status-indicator running" id="east-replicat-status"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- East to West Source Components -->
+                        <div class="process-row">
+                            <div style="display: flex; align-items: center; gap: 10px; flex-direction: row-reverse;">
+                                <div class="process-box extract" id="east-extract">
+                                    Extract
+                                    <div class="status-indicator running" id="east-extract-status"></div>
+                                </div>
+                                <div style="color: #7f8c8d; font-size: 1.2em;">←</div>
+                                <div class="trail-file" id="east-local-trail">Local<br>Trail</div>
+                                <div style="color: #7f8c8d; font-size: 1.2em;">←</div>
+                                <div class="process-box distribution" id="east-distribution">
+                                    Dist<br>Path
+                                    <div class="status-indicator running" id="east-distribution-status"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Connection Lines for Bidirectional Flow -->
+            <div class="connection-line west-to-east" id="west-to-east-1" style="top: 350px; left: 420px; width: 680px;"></div>
+            <div class="connection-line east-to-west" id="east-to-west-1" style="top: 430px; left: 420px; width: 680px;"></div>
+        </div>
+
+        <div class="controls-panel">
+            <div class="control-group">
+                <button class="control-button start" id="start-replication">Start Bidirectional Replication</button>
+            </div>
+            <div class="control-group">
+                <button class="control-button stop" id="stop-replication">Stop Replication</button>
+            </div>
+            <div class="control-group">
+                <button class="control-button simulate" id="simulate-west-activity">Simulate West Activity</button>
+            </div>
+            <div class="control-group">
+                <button class="control-button simulate" id="simulate-east-activity">Simulate East Activity</button>
+            </div>
+            <div class="control-group">
+                <button class="control-button" id="simulate-conflict">Simulate Conflict</button>
+            </div>
+            <div class="control-group">
+                <button class="control-button" id="add-lag">Add Network Lag</button>
+            </div>
+            <div class="control-group">
+                <label style="color: #2c3e50; font-weight: bold;">Speed: </label>
+                <input type="range" id="speed-control" min="0.5" max="3" step="0.5" value="0.5" style="width: 100px;">
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Log Panel -->
+    <div class="activity-log-panel">
+        <h4>GoldenGate 23ai Activity Log</h4>
+        <div class="log-container" id="activity-log">
+            <div class="log-entry west">West Extract process started</div>
+            <div class="log-entry west">West Distribution Path initialized</div>
+            <div class="log-entry east">East Extract process started</div>
+            <div class="log-entry east">East Distribution Path initialized</div>
+            <div class="log-entry">Bidirectional replication ready</div>
+        </div>
+    </div>
+
+    <!-- Metrics Panel -->
+    <div class="metrics-panel">
+        <h4>Bidirectional Replication Metrics</h4>
+        <div class="metric-item">
+            <span>West→East Records:</span>
+            <span class="metric-value" id="west-to-east-records">0</span>
+        </div>
+        <div class="metric-item">
+            <span>East→West Records:</span>
+            <span class="metric-value" id="east-to-west-records">0</span>
+        </div>
+        <div class="metric-item">
+            <span>West Replication Lag:</span>
+            <span class="metric-value" id="west-lag">0ms</span>
+        </div>
+        <div class="metric-item">
+            <span>East Replication Lag:</span>
+            <span class="metric-value" id="east-lag">0ms</span>
+        </div>
+        <div class="metric-item">
+            <span>West Throughput:</span>
+            <span class="metric-value" id="west-throughput">0 recs/sec</span>
+        </div>
+        <div class="metric-item">
+            <span>East Throughput:</span>
+            <span class="metric-value" id="east-throughput">0 recs/sec</span>
+        </div>
+        <div class="metric-item">
+            <span>Conflicts Detected:</span>
+            <span class="metric-value" id="conflicts-detected">0</span>
+        </div>
+        <div class="metric-item">
+            <span>Network Status:</span>
+            <span class="metric-value" id="network-status">Healthy</span>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script>
+        class GoldenGateBidirectionalDemo {
+            constructor() {
+                this.isRunning = false;
+                this.speed = 1;
+                this.westToEastRecords = 0;
+                this.eastToWestRecords = 0;
+                this.westLag = 0;
+                this.eastLag = 0;
+                this.westThroughput = 0;
+                this.eastThroughput = 0;
+                this.conflictsDetected = 0;
+                this.packets = [];
+                this.logEntries = [];
+                
+                this.initializeEventListeners();
+                this.startMetricsUpdate();
+            }
+
+            initializeEventListeners() {
+                document.getElementById('start-replication').addEventListener('click', () => this.startReplication());
+                document.getElementById('stop-replication').addEventListener('click', () => this.stopReplication());
+                document.getElementById('simulate-west-activity').addEventListener('click', () => this.simulateActivity('west'));
+                document.getElementById('simulate-east-activity').addEventListener('click', () => this.simulateActivity('east'));
+                document.getElementById('simulate-conflict').addEventListener('click', () => this.simulateConflict());
+                document.getElementById('add-lag').addEventListener('click', () => this.addNetworkLag());
+                document.getElementById('speed-control').addEventListener('input', (e) => {
+                    this.speed = parseFloat(e.target.value);
+                });
+            }
+
+            startReplication() {
+                if (this.isRunning) return;
+                
+                this.isRunning = true;
+                this.startTime = Date.now(); // Reset start time when replication starts
+                this.showToast('Bidirectional replication started', 'success');
+                this.addLogEntry('Bidirectional replication processes initiated', 'extract');
+                
+                // Start both directions with more frequent transactions
+                this.westToEastInterval = setInterval(() => {
+                    if (Math.random() < 0.8) { // 80% chance of west activity (increased from 70%)
+                        this.processTransaction('west');
+                    }
+                }, 1500 / this.speed); // Reduced from 3000ms to 1500ms
+
+                this.eastToWestInterval = setInterval(() => {
+                    if (Math.random() < 0.7) { // 70% chance of east activity (increased from 60%)
+                        this.processTransaction('east');
+                    }
+                }, 1800 / this.speed); // Reduced from 3500ms to 1800ms
+
+                this.updateConnectionLines();
+            }
+
+            stopReplication() {
+                if (!this.isRunning) return;
+                
+                this.isRunning = false;
+                if (this.westToEastInterval) clearInterval(this.westToEastInterval);
+                if (this.eastToWestInterval) clearInterval(this.eastToWestInterval);
+                
+                this.showToast('Bidirectional replication stopped', 'error');
+                this.addLogEntry('All replication processes stopped', 'error');
+                this.updateConnectionLines();
+            }
+
+            simulateActivity(site) {
+                if (!this.isRunning) {
+                    this.showToast('Please start replication first', 'warning');
+                    return;
+                }
+                
+                // Force immediate activity from specified site
+                this.processTransaction(site);
+                this.showToast(`Forced activity from ${site.toUpperCase()} site`, 'info');
+            }
+
+            processTransaction(sourceSite) {
+                if (!this.isRunning) return;
+
+                const operations = ['insert', 'update', 'delete'];
+                const operation = operations[Math.floor(Math.random() * operations.length)];
+                const targetSite = sourceSite === 'west' ? 'east' : 'west';
+                const extractTime = Date.now(); // Capture time when Extract processes it
+                
+                // Extract phase
+                this.addLogEntry(`${sourceSite.toUpperCase()}: Extracted ${operation.toUpperCase()} operation from redo logs`, sourceSite);
+                
+                // Create data packet animation
+                setTimeout(() => {
+                    const packetDuration = this.createDataPacket(operation, sourceSite, targetSite);
+                    this.addLogEntry(`${sourceSite.toUpperCase()}: Distribution Path transferring ${operation} to ${targetSite.toUpperCase()}`, 'distribution');
+                    
+                    // Wait for packet to actually arrive before starting Replicat
+                    setTimeout(() => {
+                        // Replicat phase - calculate actual lag
+                        const replicatTime = Date.now();
+                        const actualLag = replicatTime - extractTime;
+                        
+                        this.addLogEntry(`${targetSite.toUpperCase()}: Replicat processing ${operation} operation`, 'replicat');
+                        
+                        // First: Highlight the Replicat process (it's working)
+                        this.highlightReplicat(targetSite);
+                        
+                        // Then: After a short delay, commit to database and highlight it
+                        setTimeout(() => {
+                            this.addLogEntry(`${targetSite.toUpperCase()}: Transaction committed to database`, 'replicat');
+                            this.highlightDatabase(targetSite);
+                            
+                            // Update metrics with realistic lag
+                            if (sourceSite === 'west') {
+                                this.westToEastRecords++;
+                                // Add some network/processing variance to the actual lag
+                                this.westLag = actualLag + Math.floor(Math.random() * 100) + 50;
+                            } else {
+                                this.eastToWestRecords++;
+                                // Add some network/processing variance to the actual lag
+                                this.eastLag = actualLag + Math.floor(Math.random() * 100) + 50;
+                            }
+                            
+                            // Simulate occasional conflicts
+                            if (Math.random() < 0.03) {
+                                this.handleConflict(operation, sourceSite, targetSite);
+                            }
+                        }, 400 / this.speed); // Short delay for commit
+                        
+                    }, (packetDuration || 2500) - 200); // Start Replicat just before packet arrives
+                }, 1000 / this.speed);
+            }
+
+            createDataPacket(operation, sourceSite, targetSite) {
+                const packet = document.createElement('div');
+                packet.className = `data-packet ${operation}`;
+                packet.textContent = operation.charAt(0).toUpperCase();
+                
+                document.querySelector('.flow-diagram').appendChild(packet);
+                
+                // Determine path based on direction
+                const direction = `${sourceSite}-to-${targetSite}`;
+                return this.animatePacket(packet, direction);
+            }
+
+            animatePacket(packet, direction) {
+                // Get the actual positions of the components dynamically
+                const westDistPath = document.getElementById('west-distribution');
+                const eastDistPath = document.getElementById('east-distribution');
+                const westRemoteTrail = document.getElementById('west-remote-trail');
+                const eastRemoteTrail = document.getElementById('east-remote-trail');
+                
+                // Get bounding rectangles relative to the viewport
+                const westDistRect = westDistPath.getBoundingClientRect();
+                const eastDistRect = eastDistPath.getBoundingClientRect();
+                const westRemoteRect = westRemoteTrail.getBoundingClientRect();
+                const eastRemoteRect = eastRemoteTrail.getBoundingClientRect();
+                
+                // Get the flow diagram container for relative positioning
+                const flowDiagram = document.querySelector('.flow-diagram');
+                const flowRect = flowDiagram.getBoundingClientRect();
+                
+                // Calculate relative positions within the flow diagram
+                const paths = {
+                    'west-to-east': { 
+                        start: { 
+                            x: westDistRect.right - flowRect.left, 
+                            y: westDistRect.top - flowRect.top + (westDistRect.height / 2) 
+                        },
+                        end: { 
+                            x: eastRemoteRect.left - flowRect.left, 
+                            y: eastRemoteRect.top - flowRect.top + (eastRemoteRect.height / 2) 
+                        }
+                    },
+                    'east-to-west': { 
+                        start: { 
+                            x: eastDistRect.right - flowRect.left, 
+                            y: eastDistRect.top - flowRect.top + (eastDistRect.height / 2) 
+                        },
+                        end: { 
+                            x: westRemoteRect.left - flowRect.left, 
+                            y: westRemoteRect.top - flowRect.top + (westRemoteRect.height / 2) 
+                        }
+                    }
+                };
+                
+                const pathInfo = paths[direction];
+                if (!pathInfo) return;
+                
+                // Set initial position
+                packet.style.position = 'absolute';
+                packet.style.left = pathInfo.start.x + 'px';
+                packet.style.top = pathInfo.start.y + 'px';
+                packet.style.zIndex = '250';
+                
+                // Adjust duration based on actual distance to ensure consistent timing
+                const distance = Math.abs(pathInfo.end.x - pathInfo.start.x);
+                const baseDuration = 2500; // Base duration in ms
+                const duration = baseDuration / this.speed;
+                
+                // Animate the full journey
+                const animation = packet.animate([
+                    { 
+                        left: pathInfo.start.x + 'px', 
+                        top: pathInfo.start.y + 'px',
+                        transform: 'scale(0.8)',
+                        opacity: '0.7'
+                    },
+                    { 
+                        left: ((pathInfo.start.x + pathInfo.end.x) / 2) + 'px', 
+                        top: pathInfo.start.y + 'px',
+                        transform: 'scale(1.2)',
+                        opacity: '1'
+                    },
+                    { 
+                        left: pathInfo.end.x + 'px', 
+                        top: pathInfo.end.y + 'px',
+                        transform: 'scale(0.8)',
+                        opacity: '0.7'
+                    }
+                ], {
+                    duration: duration,
+                    easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                });
+                
+                // Add a trail effect
+                this.createPacketTrail(packet, pathInfo, duration);
+                
+                setTimeout(() => {
+                    if (packet && packet.parentNode) {
+                        packet.remove();
+                    }
+                }, duration);
+                
+                // Return the duration so the caller can sync with it
+                return duration;
+            }
+
+            createPacketTrail(packet, pathInfo, duration) {
+                const trailLength = 5;
+                const trailDelay = 100;
+                
+                for (let i = 1; i <= trailLength; i++) {
+                    setTimeout(() => {
+                        const trail = document.createElement('div');
+                        trail.className = 'packet-trail';
+                        trail.style.position = 'absolute';
+                        trail.style.width = '8px';
+                        trail.style.height = '8px';
+                        trail.style.borderRadius = '50%';
+                        trail.style.backgroundColor = packet.style.backgroundColor || '#3498db';
+                        trail.style.opacity = (0.6 - (i * 0.1));
+                        trail.style.zIndex = '240';
+                        trail.style.left = pathInfo.start.x + 'px';
+                        trail.style.top = pathInfo.start.y + 'px';
+                        
+                        document.querySelector('.flow-diagram').appendChild(trail);
+                        
+                        trail.animate([
+                            { left: pathInfo.start.x + 'px', top: pathInfo.start.y + 'px' },
+                            { left: pathInfo.end.x + 'px', top: pathInfo.end.y + 'px' }
+                        ], {
+                            duration: duration - (i * trailDelay),
+                            easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                        });
+                        
+                        setTimeout(() => {
+                            if (trail && trail.parentNode) {
+                                trail.remove();
+                            }
+                        }, duration);
+                    }, i * trailDelay);
+                }
+            }
+
+            highlightReplicat(site) {
+                const replicat = document.querySelector(`#${site}-replicat`);
+                
+                if (replicat) {
+                    // Add highlight class to Replicat process
+                    replicat.classList.add('highlight');
+                    
+                    // Remove highlight after animation completes
+                    setTimeout(() => {
+                        replicat.classList.remove('highlight');
+                    }, 800);
+                }
+            }
+
+            highlightDatabase(site) {
+                const database = document.querySelector(`#${site}-site .database`);
+                const dbBody = document.querySelector(`#${site}-site .db-body`);
+                
+                if (database && dbBody) {
+                    // Add highlight classes
+                    database.classList.add('highlight');
+                    dbBody.classList.add('highlight');
+                    
+                    // Remove highlight after animation completes
+                    setTimeout(() => {
+                        database.classList.remove('highlight');
+                        dbBody.classList.remove('highlight');
+                    }, 1000);
+                }
+            }
+
+            simulateConflict() {
+                this.conflictsDetected++;
+                this.showToast('Bidirectional conflict detected! Applying resolution strategy', 'warning');
+                this.addLogEntry('Conflict detected: Concurrent UPDATE on same record from both sites', 'warning');
+                this.addLogEntry('Applied conflict resolution: Latest timestamp wins', 'replicat');
+                
+                // Show conflict indicators on both replicat processes
+                ['west-replicat', 'east-replicat'].forEach(id => {
+                    const replicatProcess = document.getElementById(id);
+                    const conflictIndicator = document.createElement('div');
+                    conflictIndicator.className = 'conflict-indicator';
+                    conflictIndicator.textContent = 'CONFLICT';
+                    replicatProcess.appendChild(conflictIndicator);
+                    
+                    setTimeout(() => {
+                        if (conflictIndicator.parentNode) {
+                            conflictIndicator.remove();
+                        }
+                    }, 4000);
+                });
+            }
+
+            handleConflict(operation, sourceSite, targetSite) {
+                this.conflictsDetected++;
+                this.showToast(`Conflict on ${operation} from ${sourceSite.toUpperCase()}→${targetSite.toUpperCase()}`, 'warning');
+                this.addLogEntry(`Conflict resolved: ${operation} operation conflict handled`, 'warning');
+            }
+
+            addNetworkLag() {
+                const lagIncrease = Math.floor(Math.random() * 800) + 300;
+                this.westLag += lagIncrease;
+                this.eastLag += lagIncrease;
+                
+                this.showToast(`Network lag increased: ${lagIncrease}ms`, 'info');
+                this.addLogEntry(`Network latency spike detected: ${lagIncrease}ms`, 'warning');
+                
+                // Update network status
+                document.getElementById('network-status').textContent = 'Degraded';
+                document.getElementById('network-status').className = 'metric-value warning';
+                
+                // Gradually reduce lag
+                const lagReduction = setInterval(() => {
+                    this.westLag = Math.max(0, this.westLag - 100);
+                    this.eastLag = Math.max(0, this.eastLag - 100);
+                    
+                    if (this.westLag === 0 && this.eastLag === 0) {
+                        clearInterval(lagReduction);
+                        this.addLogEntry('Network latency normalized', 'distribution');
+                        document.getElementById('network-status').textContent = 'Healthy';
+                        document.getElementById('network-status').className = 'metric-value';
+                    }
+                }, 1500);
+            }
+
+            updateConnectionLines() {
+                // Get actual component positions for dynamic connection lines
+                const westDistPath = document.getElementById('west-distribution');
+                const eastRemoteTrail = document.getElementById('east-remote-trail');
+                const eastDistPath = document.getElementById('east-distribution');
+                const westRemoteTrail = document.getElementById('west-remote-trail');
+                
+                if (westDistPath && eastRemoteTrail && eastDistPath && westRemoteTrail) {
+                    const flowDiagram = document.querySelector('.flow-diagram');
+                    const flowRect = flowDiagram.getBoundingClientRect();
+                    
+                    const westDistRect = westDistPath.getBoundingClientRect();
+                    const eastRemoteRect = eastRemoteTrail.getBoundingClientRect();
+                    const eastDistRect = eastDistPath.getBoundingClientRect();
+                    const westRemoteRect = westRemoteTrail.getBoundingClientRect();
+                    
+                    // Update West to East line
+                    const westToEastLine = document.getElementById('west-to-east-1');
+                    const westToEastStart = westDistRect.right - flowRect.left;
+                    const westToEastEnd = eastRemoteRect.left - flowRect.left;
+                    const westToEastWidth = westToEastEnd - westToEastStart;
+                    const westToEastTop = westDistRect.top - flowRect.top + (westDistRect.height / 2);
+                    
+                    westToEastLine.style.left = westToEastStart + 'px';
+                    westToEastLine.style.top = westToEastTop + 'px';
+                    westToEastLine.style.width = westToEastWidth + 'px';
+                    
+                    // Update East to West line
+                    const eastToWestLine = document.getElementById('east-to-west-1');
+                    const eastToWestStart = westRemoteRect.right - flowRect.left;
+                    const eastToWestEnd = eastDistRect.left - flowRect.left;
+                    const eastToWestWidth = eastToWestEnd - eastToWestStart;
+                    const eastToWestTop = eastDistRect.top - flowRect.top + (eastDistRect.height / 2);
+                    
+                    eastToWestLine.style.left = eastToWestStart + 'px';
+                    eastToWestLine.style.top = eastToWestTop + 'px';
+                    eastToWestLine.style.width = eastToWestWidth + 'px';
+                }
+                
+                // Add/remove active class based on running state
+                const lines = document.querySelectorAll('.connection-line');
+                lines.forEach(line => {
+                    if (this.isRunning) {
+                        line.classList.add('active');
+                    } else {
+                        line.classList.remove('active');
+                    }
+                });
+            }
+
+            calculateThroughput() {
+                const now = Date.now();
+                const timeElapsed = (now - this.startTime) / 1000; // Convert to seconds
+                
+                if (timeElapsed > 0) {
+                    this.westThroughput = Math.round((this.westToEastRecords / timeElapsed) * 10) / 10; // Round to 1 decimal
+                    this.eastThroughput = Math.round((this.eastToWestRecords / timeElapsed) * 10) / 10; // Round to 1 decimal
+                } else {
+                    this.westThroughput = 0;
+                    this.eastThroughput = 0;
+                }
+            }
+
+            addLogEntry(message, type) {
+                const entry = document.createElement('div');
+                entry.className = `log-entry ${type}`;
+                entry.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+                
+                const logContainer = document.getElementById('activity-log');
+                logContainer.appendChild(entry);
+                logContainer.scrollTop = logContainer.scrollHeight;
+                
+                // Keep only last 100 entries
+                const entries = logContainer.querySelectorAll('.log-entry');
+                if (entries.length > 100) {
+                    entries[0].remove();
+                }
+            }
+
+            showToast(message, type) {
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                toast.textContent = message;
+                
+                document.getElementById('toast-container').appendChild(toast);
+                
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.remove();
+                    }
+                }, 4000);
+            }
+
+            startMetricsUpdate() {
+                this.startTime = Date.now();
+                
+                // Initial connection line setup
+                setTimeout(() => {
+                    this.updateConnectionLines();
+                }, 100);
+                
+                // Handle window resize to recalculate positions
+                window.addEventListener('resize', () => {
+                    this.updateConnectionLines();
+                });
+                
+                setInterval(() => {
+                    this.calculateThroughput();
+                    
+                    // Lag doesn't need to be reduced over time since it's calculated per transaction
+                    // Just display the current lag values
+                    
+                    document.getElementById('west-to-east-records').textContent = this.westToEastRecords;
+                    document.getElementById('east-to-west-records').textContent = this.eastToWestRecords;
+                    document.getElementById('west-lag').textContent = this.westLag + 'ms';
+                    document.getElementById('east-lag').textContent = this.eastLag + 'ms';
+                    document.getElementById('west-throughput').textContent = this.westThroughput + ' recs/sec';
+                    document.getElementById('east-throughput').textContent = this.eastThroughput + ' recs/sec';
+                    document.getElementById('conflicts-detected').textContent = this.conflictsDetected;
+                    
+                    // Update lag status colors
+                    const westLagElement = document.getElementById('west-lag');
+                    const eastLagElement = document.getElementById('east-lag');
+                    
+                    [westLagElement, eastLagElement].forEach((element, index) => {
+                        const lag = index === 0 ? this.westLag : this.eastLag;
+                        if (lag > 1000) {
+                            element.className = 'metric-value error';
+                        } else if (lag > 500) {
+                            element.className = 'metric-value warning';
+                        } else {
+                            element.className = 'metric-value';
+                        }
+                    });
+                }, 1000);
+            }
+        }
+
+        // Initialize the demo when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            const demo = new GoldenGateBidirectionalDemo();
+        });
+    </script>
+</body>
+</html>
