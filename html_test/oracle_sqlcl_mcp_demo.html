@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oracle SQLcl MCP Server - Financial Services Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            color: white;
+        }
+        
+        .header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 8px;
+        }
+        
+        .header p {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+        
+        .setup-section {
+            background: rgba(255,255,255,0.95);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .setup-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 25px;
+            align-items: start;
+        }
+        
+        .setup-step {
+            text-align: center;
+        }
+        
+        .setup-step h3 {
+            color: #007bff;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        
+        .setup-code {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            margin: 8px 0;
+            text-align: left;
+        }
+        
+        .setup-step p {
+            font-size: 0.9rem;
+            color: #666;
+            line-height: 1.4;
+        }
+        
+        .controls-section {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        
+        .dropdown-container {
+            position: relative;
+        }
+        
+        .dropdown-label {
+            color: white;
+            font-weight: bold;
+            margin-right: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .dropdown {
+            background: white;
+            border: 2px solid #007bff;
+            border-radius: 8px;
+            padding: 10px 15px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            min-width: 200px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .dropdown:hover {
+            background: #f8f9fa;
+        }
+        
+        .demo-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            height: 600px;
+        }
+        
+        .chat-panel {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .terminal-panel {
+            background: #1a1a1a;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .panel-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            font-weight: bold;
+            background: #f8f9fa;
+            border-radius: 12px 12px 0 0;
+            font-size: 1.1rem;
+        }
+        
+        .terminal-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #333;
+            background: #2d2d2d;
+            border-radius: 12px 12px 0 0;
+            color: #ccc;
+            font-size: 1rem;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            scroll-behavior: smooth;
+            max-height: 500px;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            padding: 15px 18px;
+            border-radius: 12px;
+            max-width: 85%;
+            line-height: 1.5;
+        }
+        
+        .user-message {
+            background: #007bff;
+            color: white;
+            margin-left: auto;
+        }
+        
+        .assistant-message {
+            background: white;
+            border: 1px solid #dee2e6;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .typing {
+            background: white;
+            border: 1px solid #dee2e6;
+            font-style: italic;
+            color: #666;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+        
+        .terminal-content {
+            padding: 20px;
+            flex: 1;
+            overflow-y: auto;
+            font-size: 13px;
+            line-height: 1.4;
+            max-height: 500px;
+        }
+        
+        .terminal-line {
+            margin-bottom: 4px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        
+        .prompt {
+            color: #00ff00;
+        }
+        
+        .system {
+            color: #ffff00;
+        }
+        
+        .error {
+            color: #ff4444;
+        }
+        
+        .success {
+            color: #44ff44;
+        }
+        
+        .info {
+            color: #44aaff;
+        }
+        
+        .approval {
+            color: #ff8844;
+        }
+        
+        .status-bar {
+            padding: 10px 20px;
+            background: #2d2d2d;
+            border-top: 1px solid #333;
+            font-size: 11px;
+            color: #888;
+            border-radius: 0 0 12px 12px;
+        }
+        
+        .connection-status {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .connected {
+            background: #44ff44;
+            box-shadow: 0 0 10px #44ff44;
+        }
+        
+        .disconnected {
+            background: #ff4444;
+        }
+        
+        .legend {
+            margin-top: 15px;
+            padding: 12px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            font-size: 11px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .color-box {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+        
+        .welcome-message {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .scenario-hint {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: #1565c0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Oracle SQLcl MCP Server Demo</h1>
+            <p>Financial Services Loan Management System • AI-Powered Database Interactions</p>
+        </div>
+        
+        <div class="setup-section">
+            <div class="setup-content">
+                <div class="setup-step">
+                    <h3>1. Install SQLcl</h3>
+                    <div class="setup-code"># Download latest SQLcl
+wget oracle.com/sqlcl-latest.zip
+unzip sqlcl-latest.zip
+
+# Or use package managers
+brew install sqlcl
+yum install sqlcl</div>
+                    <p>SQLcl 25.2+ includes built-in MCP Server support for seamless AI integration</p>
+                </div>
+                
+                <div class="setup-step">
+                    <h3>2. Configure MCP Client</h3>
+                    <div class="setup-code"># Configure in claude_desktop_config.json
+{
+  "mcpServers": {
+    "sqlcl": {
+      "command": "/path/to/sqlcl/bin/sql",
+      "args": ["-mcp"]
+    }
+  }
+}</div>
+                    <p>VS Code with SQL Developer extension auto-registers with GitHub Copilot</p>
+                </div>
+                
+                <div class="setup-step">
+                    <h3>3. Start MCP Server</h3>
+                    <div class="setup-code"># Launch SQLcl in MCP mode
+sql -mcp
+
+# Create secure connections
+SQL> conn -save prod user/pass@host:port/service
+SQL> conn -save dev user/pass@dev_host/service</div>
+                    <p>Create named connections for secure, audited database access via AI assistants</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls-section">
+            <div class="dropdown-container">
+                <span class="dropdown-label">Basic Operations:</span>
+                <select id="basic-dropdown" class="dropdown">
+                    <option value="">Select a basic operation...</option>
+                    <option value="connect">Connect to Database</option>
+                    <option value="simple-query">Run Simple Queries</option>
+                    <option value="schema">Browse Database Schema</option>
+                    <option value="status">Check Connection Status</option>
+                </select>
+            </div>
+            
+            <div class="dropdown-container">
+                <span class="dropdown-label">Advanced Operations:</span>
+                <select id="advanced-dropdown" class="dropdown">
+                    <option value="">Select an advanced operation...</option>
+                    <option value="analytics">Complex Analytics</option>
+                    <option value="multi-env">Multi-Environment Operations</option>
+                    <option value="transaction">Transaction Management</option>
+                    <option value="performance">Performance Monitoring</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="demo-layout">
+            <div class="chat-panel">
+                <div class="panel-header">
+                    AI Assistant Chat Interface
+                </div>
+                <div id="chat-messages" class="chat-messages">
+                    <div class="welcome-message">
+                        <strong>Welcome to Oracle SQLcl MCP Server!</strong><br>
+                        I can help you interact with your Financial Services loan database using natural language. Select any operation from the dropdowns above to see how MCP bridges AI assistants to Oracle Database with enterprise security and governance.
+                    </div>
+                    <div class="scenario-hint">
+                        💡 <strong>Try this:</strong> Select "Connect to Database" from Basic Operations to see the secure connection workflow with user approval and audit logging.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="terminal-panel">
+                <div class="terminal-header">
+                    SQLcl MCP Server Terminal • Financial Services Database
+                </div>
+                <div id="terminal-content" class="terminal-content">
+                    <div class="terminal-line system">Oracle SQLcl MCP Server v25.2 - Ready</div>
+                    <div class="terminal-line info">Available Databases: LOANTRAK_PROD, LOANTRAK_DEV, LOANTRAK_TEST</div>
+                    <div class="terminal-line info">MCP Tools: list-connections, connect, run-sql</div>
+                    <div class="terminal-line info">Security: User approval required, Full audit logging enabled</div>
+                    <div class="terminal-line prompt">mcp:// $ _</div>
+                </div>
+                <div class="status-bar">
+                    <span class="connection-status disconnected"></span>
+                    Not Connected • MCP Client: GitHub Copilot • Security: Audit Mode Enabled
+                </div>
+            </div>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <span class="color-box success" style="background: #44ff44;"></span>
+                <span>System Messages</span>
+            </div>
+            <div class="legend-item">
+                <span class="color-box info" style="background: #44aaff;"></span>
+                <span>MCP Commands</span>
+            </div>
+            <div class="legend-item">
+                <span class="color-box" style="background: #ffff00;"></span>
+                <span>SQL Execution</span>
+            </div>
+            <div class="legend-item">
+                <span class="color-box approval" style="background: #ff8844;"></span>
+                <span>User Approval</span>
+            </div>
+            <div class="legend-item">
+                <span class="color-box error" style="background: #ff4444;"></span>
+                <span>Errors/Warnings</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const scenarios = {
+            connect: {
+                userMessage: "Connect to the LoanTrak production database",
+                terminalSteps: [
+                    { type: 'info', text: 'MCP Client (GitHub Copilot) requesting list-connections tool...' },
+                    { type: 'approval', text: '⚠️  USER APPROVAL REQUIRED: Allow MCP tool "list-connections"?' },
+                    { type: 'approval', text: '✓ User approved tool usage' },
+                    { type: 'system', text: 'Executing: list-connections' },
+                    { type: 'success', text: 'Available connections: LOANTRAK_PROD, LOANTRAK_REPORTING, LOANTRAK_DEV, LOANTRAK_TEST' },
+                    { type: 'info', text: 'MCP Client requesting connect to LOANTRAK_PROD...' },
+                    { type: 'error', text: '⚠️  SECURITY RECOMMENDATION: Production database access not recommended for LLM operations' },
+                    { type: 'info', text: 'Oracle SQLcl MCP Server suggests: Use LOANTRAK_REPORTING instead' },
+                    { type: 'system', text: 'Reason: Read-only replica with sanitized data, optimal for AI analytics' },
+                    { type: 'approval', text: '⚠️  USER APPROVAL REQUIRED: Connect to LOANTRAK_REPORTING (recommended)?' },
+                    { type: 'approval', text: '✓ User approved secure connection' },
+                    { type: 'system', text: 'Executing: connect --connection LOANTRAK_REPORTING' },
+                    { type: 'success', text: 'Connected to Oracle Database 23ai (LOANTRAK_REPORTING)' },
+                    { type: 'info', text: 'Session ID: 12847 • V$SESSION.MODULE = "GitHub Copilot"' },
+                    { type: 'info', text: 'V$SESSION.ACTION = "gpt-4" • Security: Read-only, sanitized data' }
+                ],
+                assistantMessage: "✅ Connected to LoanTrak reporting database (not production) for security best practices!\n\n**Why Reporting Instead of Production:**\n• **Data Protection**: Read-only access prevents accidental modifications\n• **Privacy Compliance**: Sanitized data removes sensitive PII/financial details\n• **Performance**: Dedicated reporting instance won't impact production workloads\n• **Audit Control**: Separate logging for AI operations vs. business operations\n\n**Available Data**: This reporting database contains the same loan application patterns, trends, and analytics as production but with anonymized customer data. Perfect for AI-powered insights without security risks.",
+                statusConnected: true
+            },
+            
+            'simple-query': {
+                userMessage: "Show me recent loan applications from this week",
+                terminalSteps: [
+                    { type: 'info', text: 'MCP Client generating SQL query...' },
+                    { type: 'approval', text: '⚠️  USER APPROVAL REQUIRED: Execute SQL query?' },
+                    { type: 'approval', text: '✓ User approved SQL execution' },
+                    { type: 'system', text: '/* LLM in use is gpt-4 */ SELECT application_id, customer_name, loan_amount,' },
+                    { type: 'system', text: '  application_date, loan_type, status FROM loan_applications' },
+                    { type: 'system', text: '  WHERE application_date >= TRUNC(SYSDATE) - 7 ORDER BY application_date DESC' },
+                    { type: 'success', text: 'Query executed successfully • 23 rows returned' },
+                    { type: 'info', text: 'Logging to DBTOOLS$MCP_LOG: Client=GitHub Copilot, Model=gpt-4' }
+                ],
+                assistantMessage: "Found 23 recent loan applications this week:\n\n• **Personal Loans**: 8 applications ($125K total)\n• **Mortgage Applications**: 12 applications ($2.4M total) \n• **Auto Loans**: 3 applications ($85K total)\n\n**Status Breakdown**: 15 pending review, 6 approved, 2 under additional verification. The mortgage applications show strong activity with an average loan amount of $200K.",
+                statusConnected: true
+            },
+            
+            schema: {
+                userMessage: "Which tables contain customer credit information?",
+                terminalSteps: [
+                    { type: 'info', text: 'MCP Client analyzing database schema...' },
+                    { type: 'approval', text: '⚠️  USER APPROVAL REQUIRED: Query system catalog tables?' },
+                    { type: 'approval', text: '✓ User approved schema query' },
+                    { type: 'system', text: '/* LLM in use is gpt-4 */ SELECT table_name, column_name FROM user_tab_columns' },
+                    { type: 'system', text: '  WHERE UPPER(column_name) LIKE \'%CREDIT%\' OR UPPER(column_name) LIKE \'%SCORE%\'' },
+                    { type: 'system', text: '  OR UPPER(table_name) LIKE \'%CREDIT%\' ORDER BY table_name, column_name' },
+                    { type: 'success', text: 'Schema analysis complete • Found 4 relevant tables' },
+                    { type: 'info', text: 'Security note: Returning only tables user has SELECT privilege on' }
+                ],
+                assistantMessage: "I found 4 tables containing customer credit information:\n\n**CUSTOMER_CREDIT_PROFILES**\n• credit_score, credit_history_length, payment_history\n\n**CREDIT_BUREAU_REPORTS** \n• fico_score, experian_score, transunion_score, equifax_score\n\n**LOAN_RISK_ASSESSMENTS**\n• risk_score, debt_to_income_ratio, credit_utilization\n\n**CREDIT_MONITORING_ALERTS**\n• alert_type, score_change, monitoring_status\n\nAll tables include proper audit trails and are subject to financial privacy regulations.",
+                statusConnected: true
+            },
+            
+            status: {
+                userMessage: "Which database am I currently connected to?",
+                terminalSteps: [
+                    { type: 'info', text: 'MCP Client checking connection status...' },
+                    { type: 'system', text: '/* LLM in use is gpt-4 */ SELECT sys_context(\'USERENV\', \'DB_NAME\') as database_name,' },
+                    { type: 'system', text: '  sys_context(\'USERENV\', \'SESSION_USER\') as username,' },
+                    { type: 'system', text: '  sys_context(\'USERENV\', \'SERVER_HOST\') as host FROM dual' },
+                    { type: 'success', text: 'Connection status retrieved • Active session confirmed' }
+                ],
+                assistantMessage: "You're currently connected to:\n\n**Database**: LOANTRAK_PROD (Oracle 23ai)\n**Host**: findb-prod-01.company.com\n**User**: LOAN_ANALYST (Read/Write privileges)\n**Session**: Active since 14:23 GMT\n**Security**: SSL encrypted, audit logging enabled\n\nThis is the production Financial Services database containing live loan and customer data.",
+                statusConnected: true
+            },
+            
+            analytics: {
+                userMessage: "Show me loan approval rates by region and risk category with quarterly trends",
+                terminalSteps: [
+                    { type: 'info', text: 'MCP Client generating complex analytical query...' },
+                    { type: 'approval', text: '⚠️  USER APPROVAL REQUIRED: Execute multi-table analytical query?' },
+                    { type: 'approval', text: '✓ User approved complex analysis' },
+                    { type: 'system', text: '/* LLM in use is gpt-4 */ WITH quarterly_stats AS (' },
+                    { type: 'system', text: '  SELECT r.region_name, la.risk_category, EXTRACT(QUARTER FROM la.decision_date) as qtr,' },
+                    { type: 'system', text: '  COUNT(*) as total_apps, SUM(CASE WHEN la.status = \'APPROVED\' THEN 1 ELSE 0 END) as approved' },
+                    { type: 'system', text: '  FROM loan_applications la JOIN customers c ON la.customer_id = c.customer_id' },
+                    { type: 'system', text: '  JOIN regions r ON c.region_id = r.region_id WHERE la.decision_date >= ADD_MONTHS(SYSDATE, -12)' },
+                    { type: 'system', text: '  GROUP BY r.region_name, la.risk_category, EXTRACT(QUARTER FROM la.decision_date))' },
+                    { type: 'system', text: 'SELECT region_name, risk_category, qtr, ROUND((approved/total_apps)*100, 2) as approval_rate' },
+                    { type: 'system', text: '  FROM quarterly_stats ORDER BY region_name, risk_category, qtr' },
+                    { type: 'success', text: 'Complex query executed • 47 rows returned • Execution time: 2.3s' },
+                    { type: 'info', text: 'Performance note: Query used 3 table joins with proper indexing' }
+                ],
+                assistantMessage: "**Loan Approval Rate Analysis - Last 4 Quarters**\n\n**Northeast Region:**\n• Low Risk: Q1:92% → Q2:94% → Q3:91% → Q4:95% ↗️\n• Medium Risk: Q1:78% → Q2:82% → Q3:79% → Q4:84% ↗️  \n• High Risk: Q1:45% → Q2:41% → Q3:48% → Q4:52% ↗️\n\n**Southeast Region:**\n• Low Risk: Q1:89% → Q2:91% → Q3:88% → Q4:93% ↗️\n• Medium Risk: Q1:72% → Q2:76% → Q3:74% → Q4:79% ↗️\n• High Risk: Q1:38% → Q2:42% → Q3:44% → Q4:47% ↗️\n\n**Key Trends**: All regions show improving approval rates in Q4. Northeast consistently outperforms Southeast by 3-5%. High-risk approvals increased 12% year-over-year due to updated risk models.",
+                statusConnected: true
+            },
+            
+            'multi-env': {
+                userMessage: "Compare loan volumes between development and production databases",
+                terminalSteps: [
+                    { type: 'info', text: 'MCP Client requesting multi-environment operation...' },
+                    { type: 'approval', text: '⚠️  USER APPROVAL REQUIRED: Connect to LOANTRAK_DEV for comparison?' },
+                    { type: 'approval', text: '✓ User approved multi-environment access' },
+                    { type: 'system', text: 'Switching to LOANTRAK_DEV connection...' },
+                    { type: 'system', text: '/* LLM in use is gpt-4 */ SELECT COUNT(*) as dev_loan_count FROM loan_applications' },
+                    { type: 'success', text: 'DEV database: 2,847 loan records' },
+                    { type: 'system', text: 'Switching back to LOANTRAK_PROD connection...' },
+                    { type: 'system', text: '/* LLM in use is gpt-4 */ SELECT COUNT(*) as prod_loan_count FROM loan_applications' },
+                    { type: 'success', text: 'PROD database: 45,293 loan records' },
+                    { type: 'info', text: 'Multi-environment comparison complete • Connection restored to PROD' }
+                ],
+                assistantMessage: "**Database Environment Comparison:**\n\n**Production (LOANTRAK_PROD):**\n• Total Loans: 45,293\n• Active Applications: 1,247\n• Data Range: Jan 2019 - Present\n• Status: Live customer data\n\n**Development (LOANTRAK_DEV):**\n• Total Loans: 2,847 (6.3% of production)\n• Active Applications: 89\n• Data Range: Sanitized test data\n• Status: Safe for testing\n\n**Recommendation**: Development environment has appropriate data subset for testing. Volume ratio of 6.3% provides good test coverage while maintaining security.",
+                statusConnected: true
+            },
+            
+            transaction: {
+                userMessage: "Update all loan statuses for applications pending over 30 days but let me review first",
+                terminalSteps: [
+                    { type: 'info', text: 'MCP Client preparing transaction with review...' },
+                    { type: 'approval', text: '⚠️  USER APPROVAL REQUIRED: Begin transaction for bulk status update?' },
+                    { type: 'approval', text: '✓ User approved transaction start' },
+                    { type: 'system', text: 'BEGIN; -- Starting transaction' },
+                    { type: 'system', text: '/* LLM in use is gpt-4 */ SELECT application_id, customer_name, days_pending,' },
+                    { type: 'system', text: '  current_status FROM (SELECT la.*, (SYSDATE - application_date) as days_pending' },
+                    { type: 'system', text: '  FROM loan_applications la WHERE status = \'PENDING\') WHERE days_pending > 30' },
+                    { type: 'success', text: 'Found 23 applications pending over 30 days' },
+                    { type: 'approval', text: '⚠️  REVIEW REQUIRED: Update these 23 records to "UNDER_REVIEW"?' },
+                    { type: 'approval', text: '✓ User confirmed bulk update' },
+                    { type: 'system', text: '/* LLM in use is gpt-4 */ UPDATE loan_applications SET status = \'UNDER_REVIEW\',' },
+                    { type: 'system', text: '  last_updated = SYSDATE WHERE application_id IN (...23 IDs...)' },
+                    { type: 'success', text: '23 rows updated successfully' },
+                    { type: 'system', text: 'COMMIT; -- Transaction committed' },
+                    { type: 'info', text: 'Audit log: Bulk status update completed by MCP Client' }
+                ],
+                assistantMessage: "**Transaction Completed Successfully** ✅\n\n**Updated 23 loan applications:**\n• Status changed from 'PENDING' → 'UNDER_REVIEW'\n• Average days pending: 38 days\n• Longest pending: 67 days (Application #LA-2024-8847)\n\n**Applications by Type:**\n• Personal Loans: 8 updated\n• Mortgages: 12 updated  \n• Auto Loans: 3 updated\n\n**Next Steps**: These applications will now appear in the underwriting queue for priority review. Automatic notifications sent to loan officers.",
+                statusConnected: true
+            },
+            
+            performance: {
+                userMessage: "Show me slow running queries today and provide optimization suggestions",
+                terminalSteps: [
+                    { type: 'info', text: 'MCP Client analyzing performance views...' },
+                    { type: 'approval', text: '⚠️  USER APPROVAL REQUIRED: Query V$SQL and AWR performance data?' },
+                    { type: 'approval', text: '✓ User approved performance analysis' },
+                    { type: 'system', text: '/* LLM in use is gpt-4 */ SELECT sql_id, elapsed_time/executions/1000000 as avg_seconds,' },
+                    { type: 'system', text: '  executions, buffer_gets, sql_text FROM v$sql WHERE last_active_time >= TRUNC(SYSDATE)' },
+                    { type: 'system', text: '  AND elapsed_time/executions > 5000000 ORDER BY elapsed_time/executions DESC' },
+                    { type: 'success', text: 'Found 5 slow queries • Analyzing execution plans...' },
+                    { type: 'system', text: 'Checking for missing indexes and table statistics...' },
+                    { type: 'info', text: 'Performance analysis complete • Recommendations generated' }
+                ],
+                assistantMessage: "**Today's Performance Analysis** 📊\n\n**Slow Queries Found (>5 seconds avg):**\n\n**Query #1** - SQL_ID: 8mg9x7pq4c2ws\n• **Issue**: Credit report aggregation (12.3s avg)\n• **Executions**: 47 times\n• **Fix**: Add index on (customer_id, report_date)\n\n**Query #2** - SQL_ID: f5h2k9m1p8x4q\n• **Issue**: Regional loan summary (8.7s avg)  \n• **Executions**: 23 times\n• **Fix**: Update table statistics, consider partitioning\n\n**Query #3** - SQL_ID: w3n8j5r2t9y1c\n• **Issue**: Risk assessment join (6.1s avg)\n• **Executions**: 156 times\n• **Fix**: Restructure JOIN order, add composite index\n\n**Immediate Actions**: Run DBMS_STATS.GATHER_TABLE_STATS on LOAN_APPLICATIONS table. Create missing indexes during next maintenance window.",
+                statusConnected: true
+            }
+        };
+        
+        function addTerminalLine(text, type = 'info') {
+            const terminal = document.getElementById('terminal-content');
+            const line = document.createElement('div');
+            line.className = `terminal-line ${type}`;
+            line.textContent = text;
+            terminal.appendChild(line);
+            
+            // Auto-scroll to bottom
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+        
+        function addChatMessage(text, isUser = false) {
+            const chatMessages = document.getElementById('chat-messages');
+            const message = document.createElement('div');
+            message.className = `message ${isUser ? 'user-message' : 'assistant-message'}`;
+            message.innerHTML = text.replace(/\n/g, '<br>');
+            chatMessages.appendChild(message);
+            
+            // Smooth auto-scroll to bottom
+            setTimeout(() => {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }, 50);
+        }
+        
+        function scrollChatToBottom() {
+            const chatMessages = document.getElementById('chat-messages');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        function updateConnectionStatus(connected) {
+            const statusIndicator = document.querySelector('.connection-status');
+            const statusText = document.querySelector('.status-bar');
+            
+            if (connected) {
+                statusIndicator.className = 'connection-status connected';
+                statusText.innerHTML = '<span class="connection-status connected"></span>Connected to LOANTRAK_PROD • MCP Client: GitHub Copilot • Security: Audit Mode Enabled';
+            } else {
+                statusIndicator.className = 'connection-status disconnected';
+                statusText.innerHTML = '<span class="connection-status disconnected"></span>Not Connected • MCP Client: GitHub Copilot • Security: Audit Mode Enabled';
+            }
+        }
+        
+        async function runScenario(scenarioKey) {
+            const scenario = scenarios[scenarioKey];
+            if (!scenario) return;
+            
+            // Reset dropdowns
+            document.getElementById('basic-dropdown').value = '';
+            document.getElementById('advanced-dropdown').value = '';
+            
+            // Add user message
+            addChatMessage(scenario.userMessage, true);
+            
+            // Add typing indicator
+            const chatMessages = document.getElementById('chat-messages');
+            const typing = document.createElement('div');
+            typing.className = 'message typing';
+            typing.innerHTML = 'AI Assistant is processing your request...';
+            chatMessages.appendChild(typing);
+            scrollChatToBottom();
+            
+            // Run terminal steps with auto-scroll
+            for (let i = 0; i < scenario.terminalSteps.length; i++) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                const step = scenario.terminalSteps[i];
+                addTerminalLine(step.text, step.type);
+                
+                // Update typing indicator periodically to show progress
+                if (i % 3 === 0) {
+                    typing.innerHTML = `AI Assistant is processing your request${'...'.repeat(((i / 3) % 3) + 1)}`;
+                    scrollChatToBottom();
+                }
+            }
+            
+            // Remove typing indicator
+            typing.remove();
+            
+            // Add assistant response
+            await new Promise(resolve => setTimeout(resolve, 500));
+            addChatMessage(scenario.assistantMessage);
+            
+            // Update connection status if specified
+            if (scenario.statusConnected !== undefined) {
+                updateConnectionStatus(scenario.statusConnected);
+            }
+        }
+        
+        // Add event listeners for dropdowns
+        document.getElementById('basic-dropdown').addEventListener('change', (e) => {
+            if (e.target.value) {
+                runScenario(e.target.value);
+            }
+        });
+        
+        document.getElementById('advanced-dropdown').addEventListener('change', (e) => {
+            if (e.target.value) {
+                runScenario(e.target.value);
+            }
+        });
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateConnectionStatus(false);
+        });
+    </script>
+</body>
+</html>
