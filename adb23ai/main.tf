@@ -48,10 +48,10 @@ resource  oci_database_autonomous_database source_autonomous_database  {
   compute_count = 2
   data_storage_size_in_tbs = 1
   db_name   = "ATP${var.resId}"
-  db_version = "23ai"
+  db_version = "26ai"
   display_name   = "AIATP${var.resId}"
   license_model = "BRING_YOUR_OWN_LICENSE"
-  db_workload = "OLTP"
+  db_workload = "DW"
   is_free_tier = false
 }
 
