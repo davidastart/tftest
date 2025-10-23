@@ -129,32 +129,73 @@ echo ""
 cat > /tmp/create_workspace.sql << EOF
 SET SERVEROUTPUT ON
 
--- First, let's remove the workspace if it exists with issues
+-- First, create a dedicated schema for the workspace (if it doesn't exist)
 DECLARE
-    l_workspace_id NUMBER;
+    l_count NUMBER;
 BEGIN
-    BEGIN
-        SELECT workspace_id INTO l_workspace_id
-        FROM apex_workspaces
-        WHERE workspace = '${WORKSPACE_NAME}';
+    SELECT COUNT(*) INTO l_count
+    FROM dba_users
+    WHERE username = 'CONGRESS_SCHEMA';
+    
+    IF l_count = 0 THEN
+        EXECUTE IMMEDIATE 'CREATE USER CONGRESS_SCHEMA IDENTIFIED BY "${ADMIN_PASSWORD}"
+            DEFAULT TABLESPACE DATA
+            TEMPORARY TABLESPACE TEMP
+            QUOTA UNLIMITED ON DATA';
         
-        -- Workspace exists, let's check if user can access it
-        DBMS_OUTPUT.PUT_LINE('Workspace ${WORKSPACE_NAME} exists with ID: ' || l_workspace_id);
-    EXCEPTION
-        WHEN NO_DATA_FOUND THEN
-            DBMS_OUTPUT.PUT_LINE('Workspace ${WORKSPACE_NAME} does not exist. Will create it.');
-    END;
+        EXECUTE IMMEDIATE 'GRANT CONNECT, RESOURCE TO CONGRESS_SCHEMA';
+        EXECUTE IMMEDIATE 'GRANT CREATE SESSION, CREATE TABLE, CREATE VIEW, CREATE PROCEDURE, 
+                          CREATE SEQUENCE, CREATE TRIGGER TO CONGRESS_SCHEMA';
+        
+        DBMS_OUTPUT.PUT_LINE('Schema CONGRESS_SCHEMA created successfully.');
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('Schema CONGRESS_SCHEMA already exists.');
+    END IF;
 END;
 /
 
--- Now create the workspace (will skip if already exists)
+-- Grant access to ADMIN schema objects
+GRANT SELECT, INSERT, UPDATE, DELETE ON ADMIN.CONGRESS_MEMBERS TO CONGRESS_SCHEMA;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ADMIN.STOCK_TRADES TO CONGRESS_SCHEMA;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ADMIN.STOCK_PRICES TO CONGRESS_SCHEMA;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ADMIN.INVESTMENT_OPPORTUNITIES TO CONGRESS_SCHEMA;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ADMIN.TRADE_ALERTS TO CONGRESS_SCHEMA;
+GRANT SELECT ON ADMIN.V_TOP_OPPORTUNITIES TO CONGRESS_SCHEMA;
+GRANT SELECT ON ADMIN.V_MEMBER_TRADING_ACTIVITY TO CONGRESS_SCHEMA;
+GRANT SELECT ON ADMIN.V_RECENT_TRADES TO CONGRESS_SCHEMA;
+GRANT SELECT ON ADMIN.V_TICKER_ANALYSIS TO CONGRESS_SCHEMA;
+GRANT EXECUTE ON ADMIN.CONGRESS_TRACKER_PKG TO CONGRESS_SCHEMA;
+
+-- Create synonyms
 BEGIN
-    -- Try to create workspace
+    FOR obj IN (SELECT 'CONGRESS_MEMBERS' as name FROM DUAL
+                UNION ALL SELECT 'STOCK_TRADES' FROM DUAL
+                UNION ALL SELECT 'STOCK_PRICES' FROM DUAL
+                UNION ALL SELECT 'INVESTMENT_OPPORTUNITIES' FROM DUAL
+                UNION ALL SELECT 'TRADE_ALERTS' FROM DUAL
+                UNION ALL SELECT 'V_TOP_OPPORTUNITIES' FROM DUAL
+                UNION ALL SELECT 'V_MEMBER_TRADING_ACTIVITY' FROM DUAL
+                UNION ALL SELECT 'V_RECENT_TRADES' FROM DUAL
+                UNION ALL SELECT 'V_TICKER_ANALYSIS' FROM DUAL
+                UNION ALL SELECT 'CONGRESS_TRACKER_PKG' FROM DUAL) LOOP
+        BEGIN
+            EXECUTE IMMEDIATE 'CREATE OR REPLACE SYNONYM CONGRESS_SCHEMA.' || obj.name || 
+                            ' FOR ADMIN.' || obj.name;
+        EXCEPTION
+            WHEN OTHERS THEN
+                DBMS_OUTPUT.PUT_LINE('Synonym for ' || obj.name || ' already exists or error: ' || SQLERRM);
+        END;
+    END LOOP;
+END;
+/
+
+-- Create the workspace
+BEGIN
     BEGIN
         APEX_INSTANCE_ADMIN.ADD_WORKSPACE(
             p_workspace_id   => NULL,
             p_workspace      => '${WORKSPACE_NAME}',
-            p_primary_schema => 'ADMIN'
+            p_primary_schema => 'CONGRESS_SCHEMA'
         );
         DBMS_OUTPUT.PUT_LINE('Workspace ${WORKSPACE_NAME} created successfully.');
     EXCEPTION
@@ -163,7 +204,6 @@ BEGIN
                 DBMS_OUTPUT.PUT_LINE('Workspace ${WORKSPACE_NAME} already exists.');
             ELSE
                 DBMS_OUTPUT.PUT_LINE('Error creating workspace: ' || SQLERRM);
-                RAISE;
             END IF;
     END;
     
